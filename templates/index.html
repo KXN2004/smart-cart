@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Cart Invoice</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Helvetica Neue', sans-serif;
+            background: #eef2f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 680px;
+            margin: 40px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center content horizontally */
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        input[type="text"] {
+            width: 100%; /* Ensure the input takes full width */
+            max-width: 400px; /* Optional: Limit the input width */
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        input[type="number"] {
+            width: 100%; /* Ensure the input takes full width */
+            max-width: 400px; /* Optional: Limit the input width */
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center; /* Center the button horizontally */
+            width: 100%;
+        }
+
+        button {
+            max-width: 200px; /* Retain the button's width */
+            padding: 12px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .footer a {
+            color: inherit;
+            text-decoration: none;
+            font-size: inherit;
+        }
+    </style>
+    <script>
+        // Check if cart_id exists in local storage and redirect
+        document.addEventListener("DOMContentLoaded", () => {
+            const cartId = localStorage.getItem('cart_id');
+            if (cartId) {
+                window.location.href = `/cart/${cartId}`;
+            }
+        });
+
+        function handleCartSubmit(event) {
+            event.preventDefault();
+            const cartId = document.getElementById('cart_id').value;
+            if (cartId) {
+                // Store cart_id in local storage
+                localStorage.setItem('cart_id', cartId);
+                // Redirect to /cart/{cart_id}
+                window.location.href = `/cart/${cartId}`;
+            } else {
+                alert('Please enter a valid Cart ID.');
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Cart Invoice</h1>
+
+        <form onsubmit="handleCartSubmit(event)">
+            <input type="number" id="cart_id" name="cart_id" placeholder="Enter Cart ID (e.g. 123)" required>
+            <div class="button-container">
+                <button type="submit">View Cart</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="footer">
+        Copyright &copy; 2025 <a href="https://github.com/kxn2004" target="_blank">Kevin Nadar</a>. All rights reserved.
+    </div>
+</body>
+
+</html>

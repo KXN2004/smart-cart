@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<title>Cart Invoice</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<style>
+		body {
+			font-family: 'Helvetica Neue', sans-serif;
+			background: #eef2f7;
+			margin: 0;
+			padding: 0;
+		}
+
+		.container {
+			max-width: 680px;
+			margin: 40px auto;
+			background-color: #fff;
+			padding: 30px;
+			border-radius: 12px;
+			box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+		}
+
+		h1 {
+			text-align: center;
+			margin-bottom: 30px;
+			color: #333;
+		}
+
+		form {
+			display: flex;
+			gap: 12px;
+			flex-wrap: wrap;
+			margin-bottom: 30px;
+		}
+
+		input[type="text"] {
+			flex: 1;
+			padding: 12px;
+			font-size: 16px;
+			border: 1px solid #ccc;
+			border-radius: 6px;
+		}
+
+		button {
+			padding: 12px 20px;
+			background-color: #28a745;
+			color: white;
+			border: none;
+			font-size: 16px;
+			border-radius: 6px;
+			cursor: pointer;
+		}
+
+		button:hover {
+			background-color: #218838;
+		}
+
+		.invoice-table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-bottom: 25px;
+		}
+
+		.invoice-table th,
+		.invoice-table td {
+			text-align: left;
+			padding: 12px;
+			border-bottom: 1px solid #e1e1e1;
+		}
+
+		.invoice-table th {
+			background-color: #f5f5f5;
+			color: #444;
+		}
+
+		.totals {
+			margin-top: 25px;
+			font-size: 16px;
+		}
+
+		.totals div {
+			display: flex;
+			justify-content: space-between;
+			padding: 8px 0;
+		}
+
+		.totals div.total {
+			font-weight: bold;
+			font-size: 18px;
+			border-top: 2px solid #ccc;
+			padding-top: 12px;
+			margin-top: 10px;
+		}
+
+		.footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .footer a {
+            color: inherit;
+            text-decoration: none;
+            font-size: inherit;
+        }
+
+		@media (max-width: 500px) {
+			form {
+				flex-direction: column;
+			}
+
+			.invoice-table th,
+			.invoice-table td {
+				font-size: 14px;
+			}
+
+			.totals div {
+				font-size: 14px;
+			}
+		}
+
+		.actions {
+			display: flex;
+			justify-content: space-between;
+			margin-top: 20px;
+		}
+
+		.actions .clear-cart {
+			background-color: #dc3545;
+			color: white;
+			border: none;
+			padding: 12px 20px;
+			font-size: 16px;
+			border-radius: 6px;
+			cursor: pointer;
+		}
+
+		.actions .clear-cart:hover {
+			background-color: #c82333;
+		}
+
+		.actions .checkout {
+			background-color: #28a745;
+			color: white;
+			border: none;
+			padding: 12px 20px;
+			font-size: 16px;
+			border-radius: 6px;
+			cursor: pointer;
+		}
+
+		.actions .checkout:hover {
+			background-color: #218838;
+		}
+
+		.actions .clear-cart,
+		.actions .checkout {
+			height: 48px; /* Explicitly set the height */
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container">
+		<h1>Cart Invoice</h1>
+
+		{% if error %}
+		<p style="color: red;">{{ error }}</p>
+		{% endif %}
+
+		{% if items %}
+		<table class="invoice-table">
+			<thead>
+				<tr>
+					<th>Item</th>
+					<th>Quantity</th>
+					<th>Price</th>
+					<th>Total</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% set ns = namespace(subtotal=0) %}
+				{% for item in items %}
+				{% set item_total = item.quantity * item.price %}
+				{% set ns.subtotal = ns.subtotal + item_total %}
+				<tr>
+					<td>{{ item.name }}</td>
+					<td>{{ item.quantity }}</td>
+					<td>₹{{ "%.2f"|format(item.price) }}</td>
+					<td>₹{{ "%.2f"|format(item_total) }}</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+
+		{% set gst = ns.subtotal * 0.18 %}
+		{% set total = ns.subtotal + gst %}
+
+		<div class="totals">
+			<div><span>Subtotal</span><span>₹{{ "%.2f"|format(ns.subtotal) }}</span></div>
+			<div><span>GST (18%)</span><span>₹{{ "%.2f"|format(gst) }}</span></div>
+			<div class="total"><span>Total</span><span>₹{{ "%.2f"|format(total) }}</span></div>
+		</div>
+
+		<div class="actions">
+			<button type="button" class="clear-cart" onclick="clearCart()">Switch Cart</button>
+			<form action="/checkout/{{ cart_id }}" method="get" style="display: inline;">
+				<button type="submit" class="checkout">Checkout</button>
+			</form>
+		</div>
+
+		{% elif not error %}
+		<p style="text-align: center; color: #777;">Enter a Cart ID to view invoice.</p>
+		{% endif %}
+	</div>
+
+	<div class="footer">
+		Copyright &copy; 2025 <a href="https://github.com/kxn2004" target="_blank">Kevin Nadar</a>. All rights reserved.
+	</div>
+
+	<script>
+		function clearCart() {
+			localStorage.removeItem('cart_id');
+			window.location.href = '/';
+		}
+	</script>
+</body>
+
+</html>
