@@ -12,6 +12,7 @@ from sqlmodel import select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from database import create_schema, get_session
+from logger import logger as log
 from models import Cart, Carts, Item, Items, RequestBody, ResponseBody
 
 templates = Jinja2Templates(directory="templates")
@@ -37,12 +38,14 @@ app = FastAPI(
 
 
 @app.exception_handler(StarletteHTTPException)
-async def custom_404_handler(request: Request, exc: StarletteHTTPException):
-    if exc.status_code == 404:
+async def custom_404_handler(request: Request, response: StarletteHTTPException):
+    if response.status_code == status.HTTP_404_NOT_FOUND:
         return templates.TemplateResponse(
-            "404.html", {"request": request}, status_code=404
+            name="404.html",
+            context={"request": request},
+            status_code=status.HTTP_404_NOT_FOUND,
         )
-    raise exc
+    raise response
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -170,6 +173,12 @@ async def add_item(
     )
     duplicate_cart_items = existing_cart_item.scalars().all()
     if len(duplicate_cart_items) >= 1:
+        removed_cart_item = duplicate_cart_items[0]
+        log.info(
+            "Item removed",
+            item=removed_cart_item.item_id,
+            cart=removed_cart_item.cart_id,
+        )
         await session.delete(duplicate_cart_items[0])
         await session.commit()
         response = ResponseBody()
@@ -178,6 +187,7 @@ async def add_item(
     added_cart_item = Cart(
         item_uid=items.id, item_id=items.item_id, cart_id=carts.cart_id
     )
+    log.info("Item added", item=added_cart_item.item_id, cart=added_cart_item.cart_id)
     session.add(added_cart_item)
     await session.commit()
     await session.refresh(added_cart_item)
