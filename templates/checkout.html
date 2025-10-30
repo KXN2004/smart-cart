@@ -78,7 +78,7 @@
         {% if error %}
             <p style="color: red;">{{ error }}</p>
         {% else %}
-            <p style="text-align: center; font-weight: bold; font-size: 24px;">₹{{ total }}</p>
+            <p style="text-align: center; font-weight: bold; font-size: 24px;">₹{{ "%.2f"|format(total) }}</p>
             <h3 style="text-align: center;">Scan the QR Code to Pay</h3>
             <img src="{{ qr_code }}" alt="UPI QR Code">
         {% endif %}

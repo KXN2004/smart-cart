@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Items Table - Smart Cart</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', sans-serif;
+            background: #eef2f7;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            gap: 10px;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            background-color: #fff;
+            color: #333;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .pagination button:hover {
+            background-color: #e9ecef;
+        }
+
+        .pagination button.active {
+            background-color: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        .pagination button:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .pagination-info {
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .rows-per-page {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rows-per-page select {
+            padding: 6px 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background-color: #fff;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .rows-per-page select:focus {
+            outline: none;
+            border-color: #28a745;
+            box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
+        }
+
+        .rows-per-page label {
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .toggle-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-button:hover {
+            background-color: #f8f9fa;
+        }
+
+        .toggle-button.active {
+            background-color: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+
+        .table-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 20px 0;
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            color: #333;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #f0f0f0 !important;
+        }
+
+        .back-link {
+            display: inline-block;
+            padding: 12px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            font-size: 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        .back-link:hover {
+            background-color: #218838;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .footer a {
+            color: inherit;
+            text-decoration: none;
+            font-size: inherit;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Items List</h1>
+        <div class="table-controls">
+            <button id="toggleStripes" class="toggle-button active" onclick="toggleStripes()">
+                <span>Striped Rows</span>
+            </button>
+        </div>
+        <table id="itemsTable">
+            <thead>
+                <tr>
+                    <th>Item ID</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Marked Price</th>
+                    <th>Discounted Price</th>
+                    <th>Quantity</th>
+                    <th>Description</th>
+                    <th>Last Restocked</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr class="table-row">
+                    <td>{{ item.id }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.category }}</td>
+                    <td>${{ "%.2f"|format(item.marked_price) }}</td>
+                    <td>{% if item.discounted_price %}${{ "%.2f"|format(item.discounted_price) }}{% else %}-{% endif %}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.description or '-' }}</td>
+                    <td>{{ item.restocked_at }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="pagination-controls">
+            <div class="rows-per-page">
+                <label for="rowsPerPage">Rows per page:</label>
+                <select id="rowsPerPage" onchange="changeRowsPerPage()">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div class="pagination">
+                <button id="prevPage" onclick="changePage(-1)">Previous</button>
+                <span id="pageInfo" class="pagination-info">Page 1 of 1</span>
+                <button id="nextPage" onclick="changePage(1)">Next</button>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/" class="back-link">Back to Home</a>
+        </div>
+
+        <div class="footer">
+            <p>Copyright &copy 2025 <a href="https://itskevin.in">Kevin Nadar</a>. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let tableRows;
+        let maxPage;
+        let stripedRows = true;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            tableRows = Array.from(document.querySelectorAll('.table-row'));
+            updatePagination();
+            applyStripes();
+        });
+
+        function toggleStripes() {
+            stripedRows = !stripedRows;
+            const button = document.getElementById('toggleStripes');
+            button.classList.toggle('active');
+            applyStripes();
+        }
+
+        function applyStripes() {
+            tableRows.forEach((row, index) => {
+                if (stripedRows) {
+                    row.style.backgroundColor = index % 2 === 1 ? '#f8f9fa' : '';
+                } else {
+                    row.style.backgroundColor = '';
+                }
+            });
+        }
+
+        function updatePagination() {
+            const rowsPerPage = parseInt(document.getElementById('rowsPerPage').value);
+            maxPage = Math.ceil(tableRows.length / rowsPerPage);
+            
+            // Adjust current page if it exceeds the new max page
+            if (currentPage > maxPage) {
+                currentPage = maxPage;
+            }
+            
+            updateTable();
+            updatePaginationControls();
+        }
+
+        function updateTable() {
+            const rowsPerPage = parseInt(document.getElementById('rowsPerPage').value);
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+
+            tableRows.forEach((row, index) => {
+                row.style.display = (index >= start && index < end) ? '' : 'none';
+            });
+
+            const totalRows = tableRows.length;
+            const showing = Math.min(end, totalRows) - start;
+            document.getElementById('pageInfo').textContent = 
+                `Page ${currentPage} of ${maxPage} (showing ${showing} of ${totalRows} items)`;
+        }
+
+        function updatePaginationControls() {
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === maxPage;
+        }
+
+        function changePage(delta) {
+            const newPage = currentPage + delta;
+            if (newPage >= 1 && newPage <= maxPage) {
+                currentPage = newPage;
+                updateTable();
+                updatePaginationControls();
+            }
+        }
+
+        function changeRowsPerPage() {
+            currentPage = 1; // Reset to first page when changing rows per page
+            updatePagination();
+        }
+    </script>
+</body>
+</html>
