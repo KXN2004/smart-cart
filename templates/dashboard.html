@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Cart</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-1: #071428;
+      --bg-2: #0f2b45;
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --card-border: rgba(255, 255, 255, 0.06);
+      --accent: #7b3fe4;
+      --muted: rgba(255, 255, 255, 0.6);
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      width: 100%;
+      min-height: 100dvh;
+      background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
+      font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      color: #e6eef8;
+      padding: 18px;
+      box-sizing: border-box;
+      display: grid;
+      gap: 18px;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      grid-template-areas:
+        "title title month month"
+        "numbers numbers month month"
+        "state customer month month"
+        "state customer month month"
+        "category payment subCategory subCategory"
+        "category payment subCategory subCategory"
+        "category payment subCategory subCategory"
+        "category payment subCategory subCategory";
+      align-items: start;
+    }
+
+    /* Header */
+    .title-card {
+      grid-area: title;
+      padding: 18px 20px;
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .title-card h1 {
+      font-size: 20px;
+      letter-spacing: 1px
+    }
+
+    .controls {
+      grid-area: controls;
+      display: flex;
+      gap: 10px;
+      align-items: center
+    }
+
+    /* Top KPI numbers */
+    .numbers {
+      grid-area: numbers;
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      padding: 16px;
+      border-radius: 12px;
+    }
+
+    .kpi {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 18px 22px;
+      border-radius: 10px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .kpi .value {
+      font-size: 28px;
+      font-weight: 700
+    }
+
+    .kpi .label {
+      color: var(--muted);
+      font-size: 13px
+    }
+
+    /* Card shared styles */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 10px;
+      box-sizing: border-box;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+      /* Allow card to expand to fill grid cell and keep chart-wrapper constrained */
+      min-height: 140px;
+    }
+
+    .card .card-title {
+      font-size: 14px;
+      color: var(--muted);
+      padding: 6px 8px
+    }
+
+    /* Chart container helpers */
+    .chart-wrapper {
+      width: 100%;
+      /* let flexbox distribute available height inside the card */
+      flex: 1 1 auto;
+      padding: 6px 10px 8px 10px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100px;
+    }
+
+    /* Make canvases fill the wrapper without being stretched by CSS
+       Chart.js will keep the drawing aspect via maintainAspectRatio:false */
+    .chart-wrapper canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    /* Grid area explicit mapping (keeps inline styles minimal) */
+    .area-month {
+      grid-area: month
+    }
+
+    .area-state {
+      grid-area: state
+    }
+
+    .area-category {
+      grid-area: category
+    }
+
+    .area-customer {
+      grid-area: customer
+    }
+
+    .area-payment {
+      grid-area: payment
+    }
+
+    .area-sub {
+      grid-area: subCategory
+    }
+
+    /* Larger areas get larger minimum heights to avoid overlapping */
+    .area-month {
+      min-height: 420px
+    }
+
+    .area-sub {
+      min-height: 320px
+    }
+  </style>
+</head>
+
+<body>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <div class="title-card">
+    <div style="display:flex;align-items:center;gap:14px">
+      <h1>RETAIL STORE SALES DASHBOARD</h1>
+    </div>
+  </div>
+
+  <div class="numbers">
+    <div class="kpi">
+      <div class="value">438K</div>
+      <div class="label">Total Amount</div>
+    </div>
+    <div class="kpi">
+      <div class="value">37K</div>
+      <div class="label">Total Profit</div>
+    </div>
+    <div class="kpi">
+      <div class="value">5615</div>
+      <div class="label">Total Quantity</div>
+    </div>
+  </div>
+
+  <div class="card area-month">
+    <div class="card-title">Total Profit by Month</div>
+    <div class="chart-wrapper">
+      <canvas id="month" aria-label="Month Chart" role="img"></canvas>
+    </div>
+  </div>
+
+  <div class="card area-state">
+    <div class="card-title">Total Amount by State</div>
+    <div class="chart-wrapper">
+      <canvas id="state" aria-label="State Chart" role="img"></canvas>
+    </div>
+  </div>
+
+  <div class="card area-category">
+    <div class="card-title">Total Quantity by Category</div>
+    <div class="chart-wrapper">
+      <canvas id="category" aria-label="Category Chart" role="img"></canvas>
+    </div>
+  </div>
+
+  <div class="card area-customer">
+    <div class="card-title">Total Amount by Customer Name</div>
+    <div class="chart-wrapper">
+      <canvas id="customer" aria-label="Customer Chart" role="img"></canvas>
+    </div>
+  </div>
+
+  <div class="card area-payment">
+    <div class="card-title">Total Quantity by Payment Mode</div>
+    <div class="chart-wrapper">
+      <canvas id="payment" aria-label="Payment Chart" role="img"></canvas>
+    </div>
+  </div>
+
+  <div class="card area-sub">
+    <div class="card-title">Total Profit by Sub-Category</div>
+    <div class="chart-wrapper">
+      <canvas id="subCategory" aria-label="Subcategory Chart" role="img"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const stateEl = document.getElementById('state');
+    const monthEl = document.getElementById('month');
+    const categoryEl = document.getElementById('category');
+    const customerEl = document.getElementById('customer');
+    const paymentEl = document.getElementById('payment');
+    const subEl = document.getElementById('subCategory');
+
+    // Prefer backend-provided values (Jinja). If they are not present, fall back to demo data.
+    let labels, backendDatasets;
+    try {
+      labels = LABEL; // if Jinja rendered this will be available
+      backendDatasets = DATASET;
+    } catch (err) {
+      labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      backendDatasets = null;
+    }
+
+    // Demo datasets used when backendDatasets is missing
+    const demo = {
+      month: [10000, 9000, 8000, 7000, 2000, -3000, -1000, 2000, -500, 3000, 10000, -2000],
+      month2: [12000, 11000, 10000, 8000, 3000, -2000, -500, 1500, 0, 2000, 9000, -1000],
+      stateLabels: ['Maharashtra', 'Madhya Pradesh', 'Uttar Pradesh', 'Delhi'],
+      stateData: [102000, 87000, 38000, 23000],
+      categoryLabels: ['Clothing', 'Electronics', 'Furniture'],
+      categoryData: [63, 21, 17],
+      customerLabels: ['Harivansh', 'Madhav', 'Madan Mohan', 'Shiva'],
+      customerData: [9900, 9400, 7800, 6300],
+      paymentLabels: ['COD', 'UPI', 'Debit Card', 'Credit Card', 'EMI'],
+      paymentData: [44, 21, 13, 12, 10],
+      subLabels: ['Printers', 'Bookcases', 'Saree', 'Accessories', 'Tables'],
+      subData: [5200, 3800, 2500, 2200, 2100]
+    };
+
+    // Helper to create a chart with standard options
+    function createChart(ctx, cfg) {
+      cfg.options = cfg.options || {};
+      cfg.options.responsive = true;
+      cfg.options.maintainAspectRatio = false;
+      return new Chart(ctx, cfg);
+    }
+
+    // Month chart (vertical bars, two series with purple/pink palette)
+    createChart(monthEl.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: backendDatasets || [
+          { label: 'Amount', data: demo.month, backgroundColor: '#7b3fe4' },
+          { label: 'Profit', data: demo.month2, backgroundColor: '#ff65a3' }
+        ]
+      },
+      options: { plugins: { legend: { position: 'top' } } }
+    });
+
+    // State chart (horizontal bar)
+    createChart(stateEl.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: backendDatasets && backendDatasets.stateLabels ? backendDatasets.stateLabels : demo.stateLabels,
+        datasets: [{ label: 'Total', data: backendDatasets && backendDatasets.stateData ? backendDatasets.stateData : demo.stateData, backgroundColor: '#ffb74d' }]
+      },
+      options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+    });
+
+    // Category chart (doughnut)
+    createChart(categoryEl.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: backendDatasets && backendDatasets.categoryLabels ? backendDatasets.categoryLabels : demo.categoryLabels,
+        datasets: [{ data: backendDatasets && backendDatasets.categoryData ? backendDatasets.categoryData : demo.categoryData, backgroundColor: ['#ff65a3', '#ffa726', '#29b6f6'] }]
+      },
+      options: { plugins: { legend: { position: 'right' } } }
+    });
+
+    // Customer chart (vertical bars)
+    createChart(customerEl.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: backendDatasets && backendDatasets.customerLabels ? backendDatasets.customerLabels : demo.customerLabels,
+        datasets: [{ data: backendDatasets && backendDatasets.customerData ? backendDatasets.customerData : demo.customerData, backgroundColor: ['#22d3ee', '#ff65a3', '#b388ff', '#ffb84d'] }]
+      },
+      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    // Payment chart (doughnut)
+    createChart(paymentEl.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: backendDatasets && backendDatasets.paymentLabels ? backendDatasets.paymentLabels : demo.paymentLabels,
+        datasets: [{ data: backendDatasets && backendDatasets.paymentData ? backendDatasets.paymentData : demo.paymentData, backgroundColor: ['#b388ff', '#29b6f6', '#ffd54f', '#4dd0e1', '#ffa726'] }]
+      },
+      options: { plugins: { legend: { position: 'right' } } }
+    });
+
+    // SubCategory chart (horizontal bar)
+    createChart(subEl.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: backendDatasets && backendDatasets.subLabels ? backendDatasets.subLabels : demo.subLabels,
+        datasets: [{ data: backendDatasets && backendDatasets.subData ? backendDatasets.subData : demo.subData, backgroundColor: ['#ffa726', '#22d3ee', '#ff65a3', '#ffb74d', '#b388ff'] }]
+      },
+      options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+    });
+  </script>
+</body>
+
+</html>
