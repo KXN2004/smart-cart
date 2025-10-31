@@ -62,6 +62,7 @@ class Item(SQLModel, table=True):
     id: int = Field(primary_key=True, foreign_key="items.item_id")
     name: str
     description: str | None = None
+    image: str
     marked_price: float
     discounted_price: float | None = None
     quantity: int

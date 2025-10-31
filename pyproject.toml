@@ -12,5 +12,6 @@ dependencies = [
     "loguru>=0.7.3",
     "python-multipart>=0.0.20",
     "qrcode[pil]>=8.1",
+    "redis[hiredis]>=7.0.1",
     "sqlmodel>=0.0.24",
 ]

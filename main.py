@@ -1,12 +1,15 @@
 import base64
 from contextlib import asynccontextmanager
 from io import BytesIO
+from logging import getLogger
 from typing import Annotated
 
 import qrcode
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.websockets import WebSocket, WebSocketDisconnect
+from redis.asyncio import ConnectionPool, Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import delete, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -18,11 +21,22 @@ from models import Cart, Carts, Item, Items, RequestBody, ResponseBody, Transact
 
 templates = Jinja2Templates(directory="templates")
 
+logger = getLogger("uvicorn")
+
 
 @asynccontextmanager
 async def app_lifespan(_: FastAPI):
     await create_schema()
+    settings = get_settings()
+    app.state.pool = ConnectionPool.from_url(settings.redis_url)
+    logger.info("Opened main redis connection pool")
+    app.state.redis = Redis(connection_pool=app.state.pool)
+    logger.info("Opened main redis client")
     yield
+    await app.state.redis.aclose()
+    logger.info("Closed main redis client")
+    await app.state.pool.disconnect()
+    logger.info("Closed main redis connection pool")
 
 
 app = FastAPI(
@@ -240,11 +254,6 @@ async def submit_cart_id(
         for item in items.scalars().all()
     }
     result = [item_ids[item_id] | result[item_id] for item_id in item_ids]
-    if not items:
-        return templates.TemplateResponse(
-            "cart.html",
-            {"request": request, "items": None, "error": "Cart not found."},
-        )
 
     return templates.TemplateResponse(
         "cart.html",
@@ -254,7 +263,9 @@ async def submit_cart_id(
 
 @app.post("/item", response_model=ResponseBody)
 async def add_item(
-    body: RequestBody, session: Annotated[AsyncSession, Depends(get_session)]
+    request: Request,
+    body: RequestBody,
+    session: Annotated[AsyncSession, Depends(get_session)],
 ) -> JSONResponse:
     items: Items = await session.get(Items, body.item_id)
     item: Item = await session.get(Item, items.item_id)
@@ -262,6 +273,8 @@ async def add_item(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Item not found!"
         )
+    redis = Redis(connection_pool=request.app.state.pool)
+    log.info("Opened child redis client")
     cart: Carts = await session.get(Carts, body.cart_id)
     existing_cart_item = await session.execute(
         select(Cart).where(Cart.item_uid == body.item_id, Cart.cart_id == cart.cart_id)
@@ -276,6 +289,7 @@ async def add_item(
         )
         await session.delete(duplicate_cart_items[0])
         await session.commit()
+        await redis.publish(channel=removed_cart_item.cart_id, message="update cart")
         response = ResponseBody()
         return response
     carts: Carts = await session.get(Carts, body.cart_id)
@@ -286,6 +300,50 @@ async def add_item(
     session.add(added_cart_item)
     await session.commit()
     await session.refresh(added_cart_item)
+    await redis.publish(channel=added_cart_item.cart_id, message="update cart")
+    await redis.aclose()
+    log.info("Closed child redis client")
     response = ResponseBody
     response.id = added_cart_item.id
     return response
+
+
+# Imma lock in
+@app.websocket("/cart/{cart_id}")
+async def cart_websocket(
+    websocket: WebSocket,
+    cart_id: str,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> None:
+    await websocket.accept()
+    pubsub = websocket.app.state.redis.pubsub()
+    logger.info("Opening pubsub connection")
+    await pubsub.subscribe(cart_id)
+    logger.info(f"Subscribed to cart {cart_id}")
+    try:
+        async for _ in pubsub.listen():
+            cart = await session.execute(select(Cart).where(Cart.cart_id == cart_id))
+            cart = cart.scalars().all()
+            item_ids = {}
+            for record in cart:
+                if record.item_id in item_ids.keys():
+                    item_ids[record.item_id]["quantity"] += 1
+                else:
+                    item_ids[record.item_id] = {"quantity": 1}
+            items = await session.execute(select(Item).where(Item.id.in_(item_ids)))
+            result = {
+                item.id: {
+                    "name": item.name,
+                    "price": item.discounted_price,
+                    "image": item.image,
+                }
+                for item in items.scalars().all()
+            }
+            result = [item_ids[item_id] | result[item_id] for item_id in item_ids]
+            await websocket.send_json(result)
+    except WebSocketDisconnect as e:
+        print(e)
+        await pubsub.unsubscribe()
+        logger.info(f"Unsubscribed from cart {cart_id}")
+        await pubsub.aclose()
+        logger.info("Closing pubsub connection")

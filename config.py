@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    redis_url: str
     database_driver: str
     database_path: str
     admin_ip: IPv4Address
